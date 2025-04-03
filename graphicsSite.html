@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicting Climate Change Across the US</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #8bc34a;
+            margin-bottom: 20px;
+        }
+        
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .state {
+            fill: #333;
+            stroke: #121212;
+            stroke-width: 0.5;
+            transition: fill 0.3s ease;
+        }
+        
+        .state:hover {
+            fill: #4CAF50;
+            cursor: pointer;
+        }
+        
+        .info-box {
+            position: absolute;
+            background-color: rgba(30, 30, 30, 0.9);
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            min-width: 200px;
+            display: none;
+            color: #f0f0f0;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #8bc34a;
+            border-bottom: 1px solid #4CAF50;
+            padding-bottom: 5px;
+        }
+        
+        .legend {
+            margin-top: 20px;
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Predicting Climate Change Across the US</h1>
+            <div class="subtitle">Explore projected environmental shifts by state</div>
+        </header>
+        
+        <div class="map-container">
+            <div id="infoBox" class="info-box">
+                <h3 id="stateName">State Name</h3>
+                <div id="stateInfo">
+                    <!-- Content will be added here dynamically -->
+                    <p>Climate data will be displayed here.</p>
+                </div>
+            </div>
+            
+            <svg id="usMap" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+                <!-- US Map paths will be inserted here by JavaScript -->
+            </svg>
+        </div>
+        
+        <div class="legend">
+            <div>
+                <span style="color: #4CAF50;">●</span> Hover over a state
+            </div>
+            <div>
+                <span style="color: #8bc34a;">●</span> Double-click for detailed information
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 Climate Prediction Project | Data sources will be listed here</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load US map data (replace with a valid TopoJSON file URL)
+            d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
+                .then(us => {
+                    // Extract the states feature collection from the TopoJSON
+                    const states = topojson.feature(us, us.objects.states);
+
+                    // Create an SVG projection for the map
+                    const projection = d3.geoAlbersUsa().fitSize([1000, 600], states);
+                    const path = d3.geoPath().projection(projection);
+
+                    // Select the SVG element and append paths for each state
+                    const map = d3.select('#usMap');
+                    map.selectAll('path')
+                        .data(states.features)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('class', 'state')
+                        .attr('id', d => d.id)
+                        .on('click', showStateInfo)
+                        .append('title')
+                        .text(d => d.properties.name);
+                })
+                .catch(error => {
+                    console.error('Error loading map:', error);
+                    alert('Failed to load map data. Please try again later.');
+                });
+
+            // Function to show state info when clicked
+            function showStateInfo(event, d) {
+                let infoBox = document.getElementById('infoBox');
+                document.getElementById('stateName').textContent = d ? d.properties.name : event.target.getAttribute('title');
+
+                // Position the info box near the clicked state
+                let rect = event.target.getBoundingClientRect();
+                let mapContainer = document.querySelector('.map-container').getBoundingClientRect();
+
+                infoBox.style.left = (rect.left - mapContainer.left + rect.width / 2) + 'px';
+                infoBox.style.top = (rect.top - mapContainer.top) + 'px';
+                infoBox.style.display = 'block';
+
+                // Close info box when clicking elsewhere
+                document.addEventListener('click', function closeInfoBox(e) {
+                    if (e.target !== event.target && !infoBox.contains(e.target)) {
+                        infoBox.style.display = 'none';
+                        document.removeEventListener('click', closeInfoBox);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
